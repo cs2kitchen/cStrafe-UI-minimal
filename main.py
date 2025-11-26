@@ -10,23 +10,31 @@ from overlay import Overlay
 # 导入托盘图标相关库
 try:
     import pystray
-    from PIL import Image
+    from PIL import Image, ImageDraw
 except ImportError:
     print("警告: 未安装 pystray 或 Pillow，托盘图标功能不可用。")
     pystray = None
     Image = None
 
-# main.py (修改 resource_path 函数)
 def resource_path(relative_path):
-    """获取资源绝对路径，用于 Nuitka 打包"""
+    """获取资源绝对路径，处理 Nuitka 打包和开发环境"""
     try:
-        # 对于 Nuitka 打包，使用模块目录
+        # Nuitka 打包后的路径
         base_path = sys._MEIPASS
-    except Exception:
+    except AttributeError:
         # 开发环境
-        base_path = os.path.abspath(".")
+        base_path = os.path.dirname(os.path.abspath(__file__))
     
-    return os.path.join(base_path, relative_path)
+    path = os.path.join(base_path, relative_path)
+    print(f"尝试加载资源: {path}")  # 调试信息
+    return path
+
+def create_default_icon():
+    """创建默认图标（红色方块）"""
+    image = Image.new('RGB', (64, 64), color='red')
+    dc = ImageDraw.Draw(image)
+    dc.rectangle((16, 16, 48, 48), fill='white')
+    return image
 
 def create_tray_icon():
     """创建托盘图标"""
@@ -35,12 +43,15 @@ def create_tray_icon():
     
     icon_path = resource_path("cs-icon.png")
     try:
-        image = Image.open(icon_path)
-        print(f"成功加载图标: {icon_path}")
+        if os.path.exists(icon_path):
+            image = Image.open(icon_path)
+            print(f"成功加载图标: {icon_path}")
+        else:
+            print(f"图标文件不存在: {icon_path}，使用默认图标")
+            image = create_default_icon()
     except Exception as e:
         print(f"加载图标失败: {e}，使用默认图标")
-        # 生成一个简单的默认图标
-        image = Image.new('RGB', (16, 16), color='red')
+        image = create_default_icon()
     
     menu = pystray.Menu(pystray.MenuItem("退出", lambda icon, item: os.kill(os.getpid(), signal.SIGINT)))
     icon = pystray.Icon("cStrafe", image, "cStrafe - 按右键退出", menu)
@@ -79,16 +90,17 @@ def run_server_mode():
     server.start_server()
 
 if __name__ == "__main__":
-    # 启动托盘图标（后台线程）
-    tray_thread = threading.Thread(target=run_tray_icon, daemon=True)
-    tray_thread.start()
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--server", action="store_true")
     args = parser.parse_args()
 
     exe_name = sys.argv[0].lower()
     
+    # 只在本地模式下启动托盘图标
+    if not (args.server or "server" in exe_name):
+        tray_thread = threading.Thread(target=run_tray_icon, daemon=True)
+        tray_thread.start()
+
     if args.server or "server" in exe_name:
         run_server_mode()
     else:

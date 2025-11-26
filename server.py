@@ -9,7 +9,70 @@ from classifier import ShotResult
 
 app = FastAPI()
 
-# ... (HTML 模板和其他代码保持不变)
+# 确保 HTML 模板正确定义（放在文件顶部）
+HTML_TEMPLATE = """
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>cStrafe HUD</title>
+        <style>
+            body { 
+                background-color: rgba(0, 0, 0, 0); 
+                margin: 0; 
+                overflow: hidden; 
+                font-family: 'Courier New', monospace;
+                font-weight: bold;
+            }
+            #container {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 10px;
+                text-shadow: 2px 2px 0px #000000;
+            }
+            .line { font-size: 24px; white-space: pre; }
+            .hidden { display: none; }
+        </style>
+    </head>
+    <body>
+        <div id="container">
+            <div id="line1" class="line" style="color: white;">Waiting...</div>
+            <div id="line2" class="line" style="color: white;"></div>
+        </div>
+        <script>
+            var ws = new WebSocket("ws://" + location.host + "/ws");
+            var container = document.getElementById("container");
+            var l1 = document.getElementById("line1");
+            var l2 = document.getElementById("line2");
+
+            ws.onmessage = function(event) {
+                var data = JSON.parse(event.data);
+                
+                l1.style.color = data.color;
+                l2.style.color = data.color;
+
+                if (data.type === "Run&Gun") {
+                    l1.innerText = "RUN & GUN";
+                    l2.innerText = "";
+                } else if (data.type === "Static") {
+                    l1.innerText = "STATIC";
+                    l2.innerText = "";
+                } else {
+                    var label = (data.type === "Overlap") ? "Overlap" : "Gap";
+                    l1.innerText = label + " - " + data.diff + " ms";
+                    l2.innerText = "Shot Delay - " + data.delay + " ms";
+                }
+            };
+            
+            ws.onclose = function() {
+                setTimeout(function() {
+                    location.reload();
+                }, 1000);
+            };
+        </script>
+    </body>
+</html>
+"""
 
 class ConnectionManager:
     def __init__(self):
@@ -32,7 +95,7 @@ listener = None
 
 @app.get("/")
 async def get():
-    return HTMLResponse(html)
+    return HTMLResponse(HTML_TEMPLATE)
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -67,7 +130,6 @@ def start_server():
     except KeyboardInterrupt:
         pass
     finally:
-        # 确保停止输入监听器
         listener.stop()
 
 if __name__ == "__main__":
