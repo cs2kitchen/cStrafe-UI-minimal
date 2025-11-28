@@ -1,7 +1,7 @@
-name: build exe
+name: Windows cStrafe Build
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
       exe_name:
         description: "exe file name"
