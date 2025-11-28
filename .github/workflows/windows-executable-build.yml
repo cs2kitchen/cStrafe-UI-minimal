@@ -35,4 +35,4 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: ${{ inputs.exe_name }}
-          path: output/${{ inputs.exe_name }}.exe
+          path: dist/${{ inputs.exe_name }}.exe
