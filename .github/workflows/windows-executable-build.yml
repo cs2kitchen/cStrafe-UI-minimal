@@ -29,12 +29,8 @@ jobs:
           pip install pyinstaller
 
       - name: Build EXE with PyInstaller
-        run: |
-          pyinstaller ^
-            --onefile ^
-            --noconsole ^
-            --name "${{ inputs.exe_name }}" ^
-            main.py
+        run: pyinstaller --onefile --noconsole --name "${{ inputs.exe_name }}" main.py
+
 
       - name: Upload EXE artifact
         uses: actions/upload-artifact@v5
