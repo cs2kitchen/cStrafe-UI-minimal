@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Optional, Tuple
-
+from config import MOVE_KEYS
 
 @dataclass
 class AxisState:
@@ -100,8 +100,8 @@ class ShotClassification:
 
 class MovementClassifier:
     def __init__(self) -> None:
-        self.vertical = AxisState(keys=("W", "S"))
-        self.horizontal = AxisState(keys=("A", "D"))
+        self.vertical = AxisState(keys=(MOVE_KEYS["up"], MOVE_KEYS["down"]))
+        self.horizontal = AxisState(keys=(MOVE_KEYS["left"], MOVE_KEYS["right"]))
 
     def on_press(self, key: str, timestamp: float) -> None:
         if key in self.vertical.keys:
