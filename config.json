@@ -1,0 +1,21 @@
+{
+  "move_up": "E",
+  "move_down": "A",
+  "move_left": "W",
+  "move_right": "F",
+  "toggle_overlay": "F1",
+  "terminate_program": "F2",
+  "increase_size": "=",
+  "decrease_size": "-",
+  "good_file_name": "sounds/good.wav",
+  "bad_file_name": "sounds/bad.wav",
+  "overlap_file_name": "sounds/overlap.wav",
+  "master_volume_up": "kp+",
+  "master_volume_down": "kp-",
+  "bad_volume_up": "kp1",
+  "bad_volume_down": "kp2",
+  "overlap_volume_up": "kp4",
+  "overlap_volume_down": "kp5",
+  "good_volume_up": "kp7",
+  "good_volume_down": "kp8"
+}
