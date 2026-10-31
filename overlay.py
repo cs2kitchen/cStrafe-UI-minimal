@@ -1,7 +1,7 @@
 import tkinter as tk
 from typing import Optional
 
-from classifier import ShotClassification
+from classifier import CounterStrafeStatistics, CounterStrafeType
 
 
 class Overlay:
@@ -52,20 +52,17 @@ class Overlay:
             y = event.y_root - self._offset_y
             self.root.geometry(f"+{x}+{y}")
 
-    def update_result(self, classification: ShotClassification) -> None:
-        label = classification.label
+    def update_result(self, cs_type : CounterStrafeType, cs_stats: CounterStrafeStatistics) -> None:
+
+        label = cs_type.value
         lines = [f"Classification: {label}"]
-        if label == "Counter‑strafe" and classification.cs_time is not None and classification.shot_delay is not None:
-            lines.append(f"CS time: {classification.cs_time:.0f} ms")
-            lines.append(f"Shot delay: {classification.shot_delay:.0f} ms")
-        elif label == "Overlap" and classification.overlap_time is not None:
-            lines.append(f"Overlap: {classification.overlap_time:.0f} ms")
-        elif label == "Bad" and classification.cs_time is not None and classification.shot_delay is not None:
-            lines.append(f"CS time: {classification.cs_time:.0f} ms")
-            lines.append(f"Shot delay: {classification.shot_delay:.0f} ms")
+        lines.append(f"Overlap: {cs_stats.overlap_duration:.0f} ms")
+        lines.append(f"Counter Strafe Key hold duration: {cs_stats.cs_key_hold_duration:.0f} ms")
+        lines.append(f"Shot delay: {cs_stats.shot_delay:.0f} ms")
+
         colours = {
-            "Counter‑strafe": "#228b22",
-            "Overlap": "#ff8c00",
+            "Early Release": "#228b22",
+            "Late Release": "#228b22",
             "Bad": "#cc0000",
         }
         bg_colour = colours.get(label, "#202020")

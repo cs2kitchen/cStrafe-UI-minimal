@@ -22,6 +22,14 @@ This is the second project in this domain. I made this so it could be more simpl
    python main.py
    ```
 
+   To save each classification and its timing statistics as CSV, provide an output filepath:
+
+   ```bash
+   python main.py --output "counter-strafe-stats.csv"
+   ```
+
+   The CSV is appended to across runs and can be loaded with `pandas.read_csv("counter-strafe-stats.csv")`. It contains `classification`, `overlap_duration`, `cs_key_hold_duration`, and `shot_delay` columns.
+
 ## Usage
 
 When the application is running, an overlay appears on top of your game window. It updates whenever you fire the left mouse button. You can drag it to any part of screen. Make sure to run your game in fullscreen windowed(won't work in fullscreen). You can control the overlay with a few simple keys:
