@@ -28,7 +28,7 @@ def generate_counter_strafe_stats(event: CounterStrafeEvent) -> CounterStrafeSta
 
 def classify_counter_strafe(stats: CounterStrafeStatistics) -> CounterStrafeType:
 
-    if not 40 < stats.cs_key_hold_duration < 120 or stats.shot_delay > 600 or abs(stats.overlap_duration) > 60:
+    if not 40 < stats.cs_key_hold_duration < 120 or not 60 < stats.shot_delay < 600 or abs(stats.overlap_duration) > 60:
         return CounterStrafeType.BAD
 
     if stats.overlap_duration >= 0:
