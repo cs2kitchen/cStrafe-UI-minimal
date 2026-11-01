@@ -1,10 +1,13 @@
+import csv
 import threading
 import time
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Tuple
 
 from pynput import keyboard, mouse
 
-from classifier import MovementClassifier, ShotClassification
+from classifier import CounterStrafeStatistics, CounterStrafeType, classify_counter_strafe, generate_counter_strafe_stats
+from input_buffer import InputBuffer, CounterStrafeEvent
 
 try:
     # Attempt to import user configured keys. The movement_keys module defines
@@ -24,8 +27,10 @@ except Exception:
     SHOOT_BUTTON = 'left'  # type: ignore
 
 class InputListener:
-    def __init__(self, overlay: "Overlay") -> None:
+    def __init__(self, overlay: "Overlay", output_path: Optional[Path] = None) -> None:
         self.overlay = overlay
+        self._output_path = output_path
+        self._output_lock = threading.Lock()
         # Determine movement keys from configuration. Use uppercase to
         # standardise comparisons. Fallback to defaults if the values are
         # missing or invalid.
@@ -43,13 +48,8 @@ class InputListener:
         right = (right[0] if right else 'D').upper()
         self._movement_keys = {forward, backward, left, right}
         self._shoot_button = self._parse_shoot_button(SHOOT_BUTTON)
+        self._input_buffer = InputBuffer()
 
-        # Initialise classifier with the configured key pairs
-        try:
-            self.classifier = MovementClassifier(vertical_keys=(forward, backward), horizontal_keys=(left, right))
-        except Exception:
-            # Fallback to default WASD if invalid configuration is provided
-            self.classifier = MovementClassifier()
         self._lock = threading.Lock()
         self._keyboard_listener: Optional[keyboard.Listener] = None
         self._mouse_listener: Optional[mouse.Listener] = None
@@ -105,7 +105,9 @@ class InputListener:
             upper_char = char.upper()
             if upper_char in self._movement_keys:
                 with self._lock:
-                    self.classifier.on_press(upper_char, timestamp)
+                    self._input_buffer.register_key_action(upper_char, True, timestamp)
+
+        self._post_input_event()
 
     def _on_key_release(self, key: keyboard.Key) -> None:
         timestamp = time.time() * 1000.0
@@ -118,7 +120,11 @@ class InputListener:
             upper_char = char.upper()
             if upper_char in self._movement_keys:
                 with self._lock:
-                    self.classifier.on_release(upper_char, timestamp)
+                    self._input_buffer.register_key_action(upper_char, False, timestamp)
+
+
+        self._post_input_event()
+
 
     def _on_click(self, x: int, y: int, button: mouse.Button, pressed: bool) -> None:
         if button != self._shoot_button:
@@ -130,10 +136,9 @@ class InputListener:
         current_time = time.time() * 1000.0
 
         with self._lock:
-            base_result = self.classifier.classify_shot(current_time)
+            self._input_buffer.register_click_action(current_time)
 
-        final_result = self._build_classification(base_result, current_time)
-        self.overlay.update_result(final_result)
+        self._post_input_event()
 
     def stop(self) -> None:
         if self._keyboard_listener is not None:
@@ -143,15 +148,43 @@ class InputListener:
             self._mouse_listener.stop()
             self._mouse_listener = None
 
-    def _build_classification(self, base: ShotClassification, shot_time: float) -> ShotClassification:
-        if base.label == "Overlap":
-            return ShotClassification(label="Overlap", overlap_time=base.overlap_time)
-        if base.label == "Counter‑strafe":
-            cs_time = base.cs_time
-            shot_delay = base.shot_delay
-            if cs_time is not None and shot_delay is not None:
-                if shot_delay > 230.0 or (cs_time > 215.0 and shot_delay > 215.0):
-                    return ShotClassification(label="Bad", cs_time=cs_time, shot_delay=shot_delay)
-                return ShotClassification(label="Counter‑strafe", cs_time=cs_time, shot_delay=shot_delay)
-            return ShotClassification(label="Bad")
-        return ShotClassification(label="Bad")
+    def _post_input_event(self):
+        cs_event = self._input_buffer.get_counter_strafe_event()
+        if cs_event:
+            cs_type, cs_stats = self._build_classification(cs_event)
+            self._write_classification(cs_type, cs_stats)
+            self.overlay.update_result(cs_type, cs_stats)
+
+    def _write_classification(
+        self,
+        cs_type: CounterStrafeType,
+        cs_stats: CounterStrafeStatistics,
+    ) -> None:
+        if self._output_path is None:
+            return
+
+        fieldnames = (
+            "classification",
+            "overlap_duration",
+            "cs_key_hold_duration",
+            "shot_delay",
+        )
+        with self._output_lock:
+            has_data = self._output_path.exists() and self._output_path.stat().st_size > 0
+            with self._output_path.open("a", newline="", encoding="utf-8") as csv_file:
+                writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+                if not has_data:
+                    writer.writeheader()
+                writer.writerow(
+                    {
+                        "classification": cs_type.value,
+                        "overlap_duration": cs_stats.overlap_duration,
+                        "cs_key_hold_duration": cs_stats.cs_key_hold_duration,
+                        "shot_delay": cs_stats.shot_delay,
+                    }
+                )
+
+    def _build_classification(self, cs_event: CounterStrafeEvent) -> Tuple[CounterStrafeType, CounterStrafeStatistics]:
+        stats = generate_counter_strafe_stats(cs_event)
+        classification = classify_counter_strafe(stats)
+        return classification, stats

@@ -1,3 +1,5 @@
+from typing import Literal
+
 """
 Defaults:
     FORWARD  = 'W'
@@ -23,6 +25,16 @@ RIGHT: str = 'D'
 
 # Default for normal users
 SHOOT_BUTTON = "left"
-
 # Left handed users can change it to:
 #SHOOT_BUTTON = "right"
+
+MovementKey = Literal['W', 'S', 'A', 'D']
+LeftClick = Literal['left']
+
+MovementKeyPairs = {
+    LEFT : RIGHT,
+    RIGHT : LEFT,
+    FORWARD : BACKWARD,
+    BACKWARD : FORWARD
+}
+
