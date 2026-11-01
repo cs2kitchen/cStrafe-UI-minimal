@@ -4,7 +4,7 @@ from pprint import pformat
 from threading import Lock
 from typing import Literal
 
-from cs_types import CounterStrafeEvent, MovementKey, LeftClick, MovementKeyPairs, SHOOT_BUTTON
+from movement_keys import MovementKey, LeftClick, MovementKeyPairs, SHOOT_BUTTON
 
 @dataclass(frozen=True, kw_only=True)
 class InputEvent:
@@ -12,6 +12,20 @@ class InputEvent:
     input: MovementKey | LeftClick
     input_triggered: bool
     timestamp: float
+
+@dataclass(frozen=True, kw_only=True)
+class CounterStrafeEvent:
+
+    first_key: MovementKey
+    second_key: MovementKey
+
+    first_key_trigger_timestamp: float
+    first_key_release_timestamp: float
+
+    second_key_trigger_timestamp: float
+    second_key_release_timestamp: float
+
+    mouse_click_timestamp: float
 
 class InputBuffer:
 

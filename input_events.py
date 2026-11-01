@@ -7,8 +7,7 @@ from typing import Optional, Tuple
 from pynput import keyboard, mouse
 
 from classifier import CounterStrafeStatistics, CounterStrafeType, classify_counter_strafe, generate_counter_strafe_stats
-from input_buffer import InputBuffer
-from cs_types import CounterStrafeEvent
+from input_buffer import InputBuffer, CounterStrafeEvent
 
 try:
     # Attempt to import user configured keys. The movement_keys module defines
